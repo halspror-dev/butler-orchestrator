@@ -7,7 +7,8 @@ telemetry, no API keys. Everything runs on your own hardware.
 
 ## What it does
 
-- **Browser chat UI** (Gradio) — talk to the system in your browser, fully local.
+- **Browser chat UI** (Gradio) with live status updates — talk to the system in
+  your browser, fully local, with immediate feedback while it works.
 - **Local LLM layer** — talks directly to models served by Ollama on your GPU.
 - **Hardened code sandbox** — runs model-generated Python in a locked-down Docker
   container (no network, non-root, resource-capped, read-only, auto-removed).
@@ -35,11 +36,8 @@ Then pull the models this project uses:
 
 From the project folder:
 
-    # 1. Create and activate a virtual environment
     py -3.12 -m venv venv
     .\venv\Scripts\Activate.ps1        # Windows PowerShell
-
-    # 2. Install dependencies
     pip install -r requirements.txt
 
 ## Running it
@@ -53,10 +51,10 @@ starts the UI, and prints a local URL.
 
     python ui.py
 
-Either way, open the printed URL (usually http://127.0.0.1:7860) in your browser
-and start chatting. Try "What is the SHA-256 hash of 'butler test'?" (routes to the
-code worker + sandbox) or "Explain why network segmentation improves security."
-(routes to the reasoning worker).
+Open the printed URL (usually http://127.0.0.1:7860) in your browser and chat.
+Try "What is the SHA-256 hash of 'butler test'?" (routes to the code worker +
+sandbox) or "Explain why network segmentation improves security." (routes to the
+reasoning worker). A status message appears immediately while it works.
 
 ## Configuration
 
@@ -64,15 +62,13 @@ code worker + sandbox) or "Explain why network segmentation improves security."
   (the `model=` arguments).
 - **VRAM / model unload time** — controlled by Ollama's `keep_alive`. A model
   unloads from VRAM ~5 minutes after last use by default. To change globally, set
-  the environment variable `OLLAMA_KEEP_ALIVE` (e.g. `30m` to keep loaded longer,
-  `0` to unload immediately, `-1` to keep loaded indefinitely).
-- **Sandbox hardening** — security flags are set in `core/sandbox.py` (network
-  disabled, memory/CPU/process caps, read-only filesystem, dropped capabilities,
-  non-root user).
+  the environment variable `OLLAMA_KEEP_ALIVE` (e.g. `30m`, `0` to unload
+  immediately, `-1` to keep loaded indefinitely).
+- **Sandbox hardening** — security flags are set in `core/sandbox.py`.
 
 ## Project structure
 
-    ui.py                 Browser chat UI (Gradio), wired to the orchestrator
+    ui.py                 Browser chat UI (Gradio) with live status, wired to the orchestrator
     launch.bat            One-click launcher (Windows)
     core/                 The orchestration system (owned, from-scratch build)
       ollama_client.py    Direct local LLM communication
@@ -80,12 +76,10 @@ code worker + sandbox) or "Explain why network segmentation improves security."
       agent.py            The agent loop (think -> run code -> observe -> answer)
       orchestrator.py     Hybrid rule + model routing to workers
     deprecated/           Earlier CrewAI-based experiments (kept for reference)
-    requirements.txt      Dependencies for the core project + UI
+    requirements.txt      Dependencies (requests, gradio)
 
 ## Notes
 
 - Fully local: no data leaves your machine. The code sandbox has no network access.
-- The `deprecated/` folder contains earlier attempts using the CrewAI framework,
-  kept to document the evaluation that led to this custom build. They require the
-  full CrewAI dependency set (see `requirements-experiments.txt`), not the minimal
-  `requirements.txt`.
+- The `deprecated/` folder documents the earlier CrewAI evaluation that led to this
+  custom build (requires `requirements-experiments.txt`, not the minimal one).
