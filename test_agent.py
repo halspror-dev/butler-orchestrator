@@ -27,7 +27,7 @@ task = Task(
 )
 
 # Wire them into a crew and run.
-crew = Crew(agents=[butler], tasks=[task], verbose=True)
+crew = Crew(agents=[butler], tasks=[task], verbose=True, tracing=False)
 result = crew.kickoff()
 
 print("\n\n=== RESULT ===")
