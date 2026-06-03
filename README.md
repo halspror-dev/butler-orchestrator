@@ -11,7 +11,7 @@ telemetry, no API keys. Everything runs on your own hardware.
 - **Browser chat UI** (Gradio) with live status updates — fully local.
 - **Butler persona** — responses are delivered in character by BigButler, who
   faithfully presents the workers' results (facts and computed values preserved
-  exactly) with personality.
+  exactly) with personality. Output is cleaned of stray model artifacts.
 - **Persistent memory** — tell it "remember ..." and it stores facts locally
   (in `memory.json`), recalling them in future sessions.
 - **Local LLM layer** — talks directly to models served by Ollama on your GPU.
@@ -19,7 +19,8 @@ telemetry, no API keys. Everything runs on your own hardware.
   container (no network, non-root, resource-capped, read-only, auto-removed).
 - **Agent loop** — a worker that thinks, runs code, observes the real result, answers.
 - **Hybrid orchestrator** — routes by deterministic rules first, falling back to a
-  coordinator model only for ambiguous cases.
+  coordinator model only for ambiguous cases. Identity questions are answered
+  directly by Butler.
 
 ## Requirements
 
@@ -50,6 +51,7 @@ http://127.0.0.1:7860) and chat with Butler.
 Examples:
 - "What is the SHA-256 hash of 'butler test'?" — code worker + sandbox, delivered by Butler
 - "Explain why network segmentation improves security." — reasoning worker
+- "Who are you?" — Butler answers in character
 - "Remember that my favorite language is Rust." — stores a memory
 - "What is my favorite language?" — recalls it (persists across restarts)
 
@@ -78,7 +80,7 @@ Examples:
 ## Notes
 
 - Fully local: no data leaves your machine. The code sandbox has no network access.
-- Butler is instructed to preserve all facts/numbers/hashes from workers exactly,
-  adding personality only to the framing — accuracy first, charm second.
+- Butler preserves all facts/numbers/hashes from workers exactly, adding personality
+  only to the framing — accuracy first, charm second.
 - `memory.json` holds personal facts and is gitignored.
 - The `deprecated/` folder documents the earlier CrewAI evaluation.
