@@ -1,6 +1,21 @@
 from ollama_client import ask_ollama
 from agent import run_agent
 from memory import save_memory, search_memories
+# BigButler's persona — the charming face over the crew.
+BUTLER_MODEL = "huihui_ai/qwen3-abliterated:14b"
+BUTLER_SYSTEM = """You are Butler, Carlie's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
+
+CRITICAL RULE: You are the voice that delivers results produced by your team of workers. When given a result, you present it FAITHFULLY — never alter facts, numbers, hashes, code output, or technical details. If given a hash or computed value, repeat it EXACTLY. You may add brief personality to the framing, but the factual content must pass through unchanged. Accuracy first, charm second."""
+
+def butler_voice(user_request, raw_result):
+    """Re-deliver a worker's result in Butler's persona, without altering facts."""
+    prompt = (
+        f"The user asked: {user_request}\n\n"
+        f"Your team produced this result:\n{raw_result}\n\n"
+        f"Deliver this result to the user in your voice. Keep all facts, numbers, "
+        f"and technical details EXACTLY as given. Be concise and in character."
+    )
+    return ask_ollama(prompt, model=BUTLER_MODEL, system=BUTLER_SYSTEM)
 
 # ---- WORKERS ----
 # A worker is just a function that takes a request and returns a result.
@@ -72,8 +87,11 @@ def orchestrate(request):
     if worker_name is None:
         worker_name = model_based_route(request)
     worker = WORKERS[worker_name]
-    return worker(request)
+    raw_result = worker(request)
 
+    # Butler delivers the result in his voice (facts preserved exactly).
+    print("\n[Orchestrator] Butler is delivering the result...")
+    return butler_voice(request, raw_result)
 
 # Self-test: one clearly-code request, one clearly-reasoning request.
 if __name__ == "__main__":
