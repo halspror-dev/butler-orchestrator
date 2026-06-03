@@ -1,0 +1,62 @@
+import re
+from ollama_client import ask_ollama
+from sandbox import run_code_sandboxed
+
+# The system prompt teaches the model HOW to ask for code execution.
+AGENT_SYSTEM = """You are a problem-solving agent with the ability to run Python code.
+
+When you need to compute, calculate, hash, or process anything precisely, do NOT guess the answer. Instead, output a code block in EXACTLY this format:
+
+RUN_CODE:
+```python
+your code here
+print(the_result)
+```
+
+Your code runs in a sandbox with no internet. ALWAYS print the result you want to see.
+After I run it, I'll give you the output, and you can use it to write your final answer.
+When you have the final answer, respond normally WITHOUT a RUN_CODE block.
+"""
+
+def extract_code(text):
+    """Pull Python code out of a RUN_CODE block, if present."""
+    if "RUN_CODE:" not in text:
+        return None
+    # Grab whatever is inside the ```python ... ``` fence after RUN_CODE:
+    match = re.search(r"RUN_CODE:\s*```(?:python)?\s*(.*?)```", text, re.DOTALL)
+    return match.group(1).strip() if match else None
+
+
+def run_agent(user_request, model="qwen3:8b", max_steps=5):
+    """An agent that can think, run code in the sandbox, observe, and answer."""
+    # Build the running conversation.
+    conversation = f"User request: {user_request}"
+
+    for step in range(max_steps):
+        print(f"\n--- Step {step + 1}: thinking ---")
+        reply = ask_ollama(conversation, model=model, system=AGENT_SYSTEM)
+        print(reply)
+
+        code = extract_code(reply)
+
+        if code is None:
+            # No code requested -> this is the final answer.
+            print("\n--- Agent finished (no more code) ---")
+            return reply
+
+        # The model wants to run code. Execute it in the sandbox.
+        print(f"\n--- Step {step + 1}: running code in sandbox ---")
+        result = run_code_sandboxed(code)
+        print(f"Sandbox output: {result}")
+
+        # Feed the result back into the conversation and loop.
+        conversation += f"\n\nYou ran this code:\n{code}\n\nThe output was:\n{result}\n\nNow continue. Give your final answer, or run more code if needed."
+
+    return "(agent hit max steps without finishing)"
+
+
+# Self-test
+if __name__ == "__main__":
+    answer = run_agent("What is the SHA-256 hash of the string 'butler test'? Compute it, don't guess.")
+    print("\n\n=== FINAL ANSWER ===")
+    print(answer)
