@@ -1,5 +1,6 @@
 from ollama_client import ask_ollama
 from agent import run_agent
+from memory import save_memory, search_memories
 
 # ---- WORKERS ----
 # A worker is just a function that takes a request and returns a result.
@@ -10,10 +11,17 @@ def code_worker(request):
     return run_agent(request, model="qwen3:8b")
 
 def reasoning_worker(request):
-    """Worker for pure reasoning/explanation — no tools, just thinks."""
+    """Worker for pure reasoning/explanation — no tools, just thinks. Memory-aware."""
     print("\n[Orchestrator] Routing to: REASONING WORKER")
     system = "You are a clear, accurate reasoning assistant. Explain concisely and correctly."
-    return ask_ollama(request, model="qwen3:14b", system=system)
+    relevant = search_memories(request)
+    if relevant:
+        memory_note = "Relevant things you remember about the user:\n" + "\n".join(f"- {m}" for m in relevant)
+        full_prompt = f"{memory_note}\n\nUser: {request}"
+        print(f"[Orchestrator] Recalled {len(relevant)} memory item(s).")
+    else:
+        full_prompt = request
+    return ask_ollama(full_prompt, model="qwen3:14b", system=system)
 
 WORKERS = {
     "code": code_worker,
@@ -49,6 +57,17 @@ def model_based_route(request):
 def orchestrate(request):
     """The CO: route the request to the right worker (rules first, model fallback)."""
     print(f"\n=== ORCHESTRATOR received: {request} ===")
+
+    # Memory command: "remember ..." stores a fact instead of routing.
+    stripped = request.strip()
+    if stripped.lower().startswith("remember"):
+        fact = stripped[len("remember"):].lstrip(" :,that").strip()
+        if fact:
+            save_memory(fact)
+            print("[Orchestrator] Saved to memory.")
+            return f"Noted. I'll remember that: {fact}"
+        return "There was nothing specific to remember."
+
     worker_name = rule_based_route(request)
     if worker_name is None:
         worker_name = model_based_route(request)

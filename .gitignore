@@ -2,6 +2,8 @@
 .env
 *.key
 
+memory.json
+
 # Python
 __pycache__/
 *.py[cod]

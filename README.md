@@ -1,14 +1,16 @@
 # Butler Orchestrator
 
-A fully local, self-owned multi-agent AI system with a browser chat UI. A hybrid
-orchestrator routes your messages to specialist workers — including a worker that
-runs code inside a hardened, network-isolated Docker sandbox. No cloud, no
-telemetry, no API keys. Everything runs on your own hardware.
+A fully local, self-owned multi-agent AI system with a browser chat UI and
+persistent memory. A hybrid orchestrator routes your messages to specialist
+workers — including a worker that runs code inside a hardened, network-isolated
+Docker sandbox. No cloud, no telemetry, no API keys. Everything runs on your own
+hardware.
 
 ## What it does
 
-- **Browser chat UI** (Gradio) with live status updates — talk to the system in
-  your browser, fully local, with immediate feedback while it works.
+- **Browser chat UI** (Gradio) with live status updates — fully local.
+- **Persistent memory** — tell it "remember ..." and it stores facts locally
+  (in `memory.json`), recalling them in future sessions.
 - **Local LLM layer** — talks directly to models served by Ollama on your GPU.
 - **Hardened code sandbox** — runs model-generated Python in a locked-down Docker
   container (no network, non-root, resource-capped, read-only, auto-removed).
@@ -19,13 +21,11 @@ telemetry, no API keys. Everything runs on your own hardware.
 
 ## Requirements
 
-Install these before running anything:
-
-1. **Python 3.12** — https://www.python.org/downloads/ (check "Add to PATH" on install)
+1. **Python 3.12** — https://www.python.org/downloads/ (check "Add to PATH")
 2. **Ollama** — https://ollama.com (the local model server)
-3. **Docker Desktop** — https://www.docker.com/products/docker-desktop/ (for the code sandbox)
+3. **Docker Desktop** — https://www.docker.com/products/docker-desktop/ (for the sandbox)
 
-Then pull the models this project uses:
+Then pull the models:
 
     ollama pull qwen3:8b
     ollama pull qwen3:14b
@@ -34,52 +34,46 @@ Then pull the models this project uses:
 
 ## Setup
 
-From the project folder:
-
     py -3.12 -m venv venv
     .\venv\Scripts\Activate.ps1        # Windows PowerShell
     pip install -r requirements.txt
 
 ## Running it
 
-Make sure **Ollama** and **Docker Desktop** are both running, then:
+Make sure **Ollama** and **Docker Desktop** are running, then double-click
+`launch.bat` (or run `python ui.py`). Open the printed URL (usually
+http://127.0.0.1:7860) and chat.
 
-**Easiest — one click:** double-click `launch.bat`. It activates the environment,
-starts the UI, and prints a local URL.
-
-**Or manually:**
-
-    python ui.py
-
-Open the printed URL (usually http://127.0.0.1:7860) in your browser and chat.
-Try "What is the SHA-256 hash of 'butler test'?" (routes to the code worker +
-sandbox) or "Explain why network segmentation improves security." (routes to the
-reasoning worker). A status message appears immediately while it works.
+Examples:
+- "What is the SHA-256 hash of 'butler test'?" — code worker + sandbox
+- "Explain why network segmentation improves security." — reasoning worker
+- "Remember that my favorite language is Rust." — stores a memory
+- "What is my favorite language?" — recalls it (persists across restarts)
 
 ## Configuration
 
-- **Which models are used** — set in `core/orchestrator.py` and `core/agent.py`
-  (the `model=` arguments).
-- **VRAM / model unload time** — controlled by Ollama's `keep_alive`. A model
-  unloads from VRAM ~5 minutes after last use by default. To change globally, set
-  the environment variable `OLLAMA_KEEP_ALIVE` (e.g. `30m`, `0` to unload
-  immediately, `-1` to keep loaded indefinitely).
-- **Sandbox hardening** — security flags are set in `core/sandbox.py`.
+- **Models** — set in `core/orchestrator.py` and `core/agent.py` (`model=` args).
+- **VRAM / unload time** — Ollama's `keep_alive`. Default unload ~5 min after use.
+  Set `OLLAMA_KEEP_ALIVE` env var (`30m`, `0` = immediate, `-1` = keep loaded).
+- **Sandbox hardening** — security flags in `core/sandbox.py`.
+- **Memory** — stored in `memory.json` (local, gitignored, human-readable).
 
 ## Project structure
 
-    ui.py                 Browser chat UI (Gradio) with live status, wired to the orchestrator
+    ui.py                 Browser chat UI (Gradio) with live status
     launch.bat            One-click launcher (Windows)
-    core/                 The orchestration system (owned, from-scratch build)
+    core/
       ollama_client.py    Direct local LLM communication
       sandbox.py          Hardened Docker code-execution sandbox
       agent.py            The agent loop (think -> run code -> observe -> answer)
-      orchestrator.py     Hybrid rule + model routing to workers
-    deprecated/           Earlier CrewAI-based experiments (kept for reference)
+      orchestrator.py     Hybrid routing + memory storing/recall
+      memory.py           Local persistent memory (JSON-backed)
+    deprecated/           Earlier CrewAI experiments (kept for reference)
     requirements.txt      Dependencies (requests, gradio)
 
 ## Notes
 
 - Fully local: no data leaves your machine. The code sandbox has no network access.
+- `memory.json` holds personal facts and is gitignored — it stays on your machine.
 - The `deprecated/` folder documents the earlier CrewAI evaluation that led to this
-  custom build (requires `requirements-experiments.txt`, not the minimal one).
+  custom build.
