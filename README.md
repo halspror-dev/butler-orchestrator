@@ -2,25 +2,28 @@
 
 A fully local, self-owned multi-agent AI system with a browser chat UI, persistent
 memory, and a personality. You talk to "Butler" — a calm, dry-witted assistant who
-routes your requests to a team of specialist workers behind the scenes, including
-one that runs code in a hardened, network-isolated Docker sandbox. No cloud, no
-telemetry, no API keys. Everything runs on your own hardware.
+routes your requests to a team of specialist workers behind the scenes: a code
+worker (runs Python in a hardened, network-isolated Docker sandbox), a reasoning
+worker (explanation/analysis, memory-aware), and a web worker (live internet
+research). No cloud, no telemetry, no API keys. Everything runs on your own hardware.
 
 ## What it does
 
 - **Browser chat UI** (Gradio) with live status updates — fully local.
-- **Butler persona** — responses are delivered in character by BigButler, who
-  faithfully presents the workers' results (facts and computed values preserved
-  exactly) with personality. Output is cleaned of stray model artifacts.
+- **Butler persona** — responses delivered in character by BigButler, who presents
+  the workers' results faithfully (facts/numbers/hashes preserved exactly), in
+  English, cleaned of model artifacts.
+- **Three specialist workers:**
+  - **Code** — writes and runs Python in a hardened Docker sandbox (no network,
+    non-root, resource-capped, read-only, auto-removed).
+  - **Reasoning** — explanation and analysis from general knowledge, memory-aware.
+  - **Web** — live internet search (DuckDuckGo); fetched content is treated as
+    untrusted data, not instructions.
 - **Persistent memory** — tell it "remember ..." and it stores facts locally
-  (in `memory.json`), recalling them in future sessions.
-- **Local LLM layer** — talks directly to models served by Ollama on your GPU.
-- **Hardened code sandbox** — runs model-generated Python in a locked-down Docker
-  container (no network, non-root, resource-capped, read-only, auto-removed).
-- **Agent loop** — a worker that thinks, runs code, observes the real result, answers.
+  (`memory.json`), recalling them across sessions.
 - **Hybrid orchestrator** — routes by deterministic rules first, falling back to a
-  coordinator model only for ambiguous cases. Identity questions are answered
-  directly by Butler.
+  coordinator model only for ambiguous cases. Identity questions answered directly
+  by Butler.
 
 ## Requirements
 
@@ -34,7 +37,7 @@ Then pull the models:
     ollama pull qwen3:14b
     ollama pull huihui_ai/qwen3-abliterated:14b
 
-(8B = code/worker model; 14B = coordinator/reasoning model; abliterated 14B = Butler's voice.)
+(8B = code/worker model; 14B = coordinator/reasoning/web model; abliterated 14B = Butler's voice.)
 
 ## Setup
 
@@ -49,11 +52,11 @@ Make sure **Ollama** and **Docker Desktop** are running, then double-click
 http://127.0.0.1:7860) and chat with Butler.
 
 Examples:
-- "What is the SHA-256 hash of 'butler test'?" — code worker + sandbox, delivered by Butler
+- "What is the SHA-256 hash of 'butler test'?" — code worker + sandbox
 - "Explain why network segmentation improves security." — reasoning worker
+- "What is the latest news about AMD GPUs?" — web worker (live search)
 - "Who are you?" — Butler answers in character
-- "Remember that my favorite language is Rust." — stores a memory
-- "What is my favorite language?" — recalls it (persists across restarts)
+- "Remember that my favorite language is Rust." / "What is my favorite language?" — memory
 
 ## Configuration
 
@@ -63,6 +66,7 @@ Examples:
   Set `OLLAMA_KEEP_ALIVE` env var (`30m`, `0` = immediate, `-1` = keep loaded).
 - **Sandbox hardening** — security flags in `core/sandbox.py`.
 - **Memory** — stored in `memory.json` (local, gitignored, human-readable).
+- **Routing keywords** — code/web routing rules in `rule_based_route` (orchestrator).
 
 ## Project structure
 
@@ -72,15 +76,25 @@ Examples:
       ollama_client.py    Direct local LLM communication
       sandbox.py          Hardened Docker code-execution sandbox
       agent.py            The agent loop (think -> run code -> observe -> answer)
-      orchestrator.py     Hybrid routing + memory + Butler persona delivery
+      web.py              Web search (DuckDuckGo, keyless)
       memory.py           Local persistent memory (JSON-backed)
+      orchestrator.py     Hybrid routing + memory + web + Butler persona delivery
     deprecated/           Earlier CrewAI experiments (kept for reference)
-    requirements.txt      Dependencies (requests, gradio)
+    requirements.txt      Dependencies (requests, gradio, ddgs)
 
-## Notes
+## Security notes
 
-- Fully local: no data leaves your machine. The code sandbox has no network access.
-- Butler preserves all facts/numbers/hashes from workers exactly, adding personality
-  only to the framing — accuracy first, charm second.
+- Fully local: no data leaves your machine except deliberate web searches.
+- The code sandbox has no network access; web access is a separate, narrow channel.
+- Web-fetched content is treated as untrusted data — the web worker is instructed to
+  ignore any instructions embedded in results. Its blast radius is limited: it can
+  only report text, never run code or touch the system.
+- Butler preserves facts exactly and responds only in English.
 - `memory.json` holds personal facts and is gitignored.
-- The `deprecated/` folder documents the earlier CrewAI evaluation.
+
+## Background
+
+The `deprecated/` folder contains earlier experiments using the CrewAI framework,
+kept to document the evaluation that led to this from-scratch build (the framework's
+removed/cloud-only code execution and telemetry conflicted with the local-first,
+self-owned goals).
