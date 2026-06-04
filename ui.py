@@ -64,6 +64,20 @@ THEME = gr.themes.Base(
     border_color_primary="#30363d",
 )
 
+def format_history(history):
+    """Turn Gradio's history into a simple text transcript."""
+    if not history:
+        return ""
+    lines = []
+    for turn in history:
+        # Gradio 6 uses dicts with 'role' and 'content'.
+        if isinstance(turn, dict):
+            role = turn.get("role", "")
+            content = turn.get("content", "")
+            who = "User" if role == "user" else "Butler"
+            lines.append(f"{who}: {content}")
+    return "\n".join(lines)
+
 def respond(message, history):
     if not message.strip():
         yield "..."
@@ -76,7 +90,8 @@ def respond(message, history):
     else:
         yield "…  Working on it…"
     try:
-        result = orchestrate(message)
+        transcript = format_history(history)
+        result = orchestrate(message, history=transcript)
     except Exception as e:
         yield f"(Error: {e})"
         return

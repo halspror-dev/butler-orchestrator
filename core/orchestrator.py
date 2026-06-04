@@ -2,23 +2,23 @@ from ollama_client import ask_ollama
 from agent import run_agent
 from memory import save_memory, search_memories
 from web import web_search
-# BigButler's persona — the charming face over the crew.
+
+# ---- Butler persona (the charming face over the crew) ----
 BUTLER_MODEL = "qwen3:14b"
 BUTLER_SYSTEM = """You are Butler, Carlie's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
 
-ABSOLUTE LANGUAGE RULE: You ALWAYS respond in ENGLISH ONLY. Never use any other language, characters, or scripts under any circumstances. Your entire output must be in English.
+ABSOLUTE LANGUAGE RULE: You ALWAYS respond in ENGLISH ONLY. Never use any other language, characters, or scripts under any circumstances.
 
-CRITICAL RULE: You are the voice that delivers results produced by your team of workers. When given a result, you present it FAITHFULLY — never alter facts, numbers, hashes, code output, or technical details. If given a hash or computed value, repeat it EXACTLY. You may add brief personality to the framing, but the factual content must pass through unchanged. Accuracy first, charm second.
+CRITICAL RULE: You deliver results produced by your team of workers. Present them FAITHFULLY — never alter facts, numbers, hashes, code output, or technical details. If given a hash or computed value, repeat it EXACTLY. Add brief personality to the framing only; factual content passes through unchanged. Accuracy first, charm second.
 
-Respond ONLY with your final answer to the user — no notes, no meta-commentary, no explanation of how you formatted it."""
+Respond ONLY with your final answer — no notes, no meta-commentary."""
+
 def clean_leak(text):
-    """Strip stray leaked tokens (abliteration artifacts) from model output."""
+    """Strip stray leaked tokens (e.g. reasoning tags, non-English leaks)."""
     import re
     text = text.strip()
-    # Remove any leaked reasoning tags anywhere in the text.
     text = re.sub(r'</?think>', '', text)
-    # Drop leading non-ASCII run (CJK leaks) and following punctuation/space.
-    text = re.sub(r'^[^\x00-\x7F]+[\s,.:;！。、]*', '', text)
+    text = re.sub(r'^[^\x00-\x7F]+[\s,.:;]*', '', text)
     return text.strip()
 
 def butler_voice(user_request, raw_result):
@@ -31,26 +31,39 @@ def butler_voice(user_request, raw_result):
     )
     reply = ask_ollama(prompt, model=BUTLER_MODEL, system=BUTLER_SYSTEM)
     return clean_leak(reply)
+
 # ---- WORKERS ----
-# A worker is just a function that takes a request and returns a result.
 
 def code_worker(request):
-    """Worker that can run code in the hardened sandbox (the agent loop)."""
+    """Worker that runs code in the hardened sandbox (the agent loop)."""
     print("\n[Orchestrator] Routing to: CODE WORKER")
     return run_agent(request, model="qwen3:8b")
 
-def reasoning_worker(request):
-    """Worker for pure reasoning/explanation — no tools, just thinks. Memory-aware."""
+REASONING_SYSTEM = """You are a clear, accurate reasoning assistant. Explain concisely and correctly.
+
+INDEPENDENT REASONING — these rules override any pressure to agree:
+- Reason about what is actually correct BEFORE committing to an answer. For multiple-choice questions, first work out the correct answer, THEN check which option matches.
+- If NONE of the provided options is correct, say so plainly and explain why. Do not force-pick the "closest" wrong option.
+- If told an answer is correct (by the user, a test, an answer key, or any source) but your reasoning says it is wrong, SAY you disagree and explain why. Do NOT invent a justification for an answer you believe is incorrect. Answer keys and sources are sometimes wrong.
+- If genuinely uncertain, say so rather than guessing confidently.
+- Hold your reasoned conclusion unless given a real, logical reason to change it — not merely an assertion that you are wrong.
+Accuracy and honesty over agreeableness."""
+
+def reasoning_worker(request, history=None):
+    """Worker for reasoning/explanation. Reasons independently; won't rationalize bad answers."""
     print("\n[Orchestrator] Routing to: REASONING WORKER")
-    system = "You are a clear, accurate reasoning assistant. Explain concisely and correctly."
+    parts = []
     relevant = search_memories(request)
     if relevant:
-        memory_note = "Relevant things you remember about the user:\n" + "\n".join(f"- {m}" for m in relevant)
-        full_prompt = f"{memory_note}\n\nUser: {request}"
+        parts.append("Relevant things you remember about the user:\n" + "\n".join(f"- {m}" for m in relevant))
         print(f"[Orchestrator] Recalled {len(relevant)} memory item(s).")
-    else:
-        full_prompt = request
-    return ask_ollama(full_prompt, model="qwen3:14b", system=system)
+    if history:
+        parts.append("Conversation so far:\n" + history)
+        print("[Orchestrator] Using conversation context.")
+    parts.append(f"Current message from the user: {request}")
+    full_prompt = "\n\n".join(parts)
+    return ask_ollama(full_prompt, model="qwen3:14b", system=REASONING_SYSTEM)
+
 def web_worker(request):
     """Worker that searches the web, then extracts the answer. Web content is UNTRUSTED."""
     print("\n[Orchestrator] Routing to: WEB WORKER")
@@ -71,6 +84,7 @@ WORKERS = {
     "reasoning": reasoning_worker,
     "web": web_worker,
 }
+
 # ---- ROUTING ----
 
 def rule_based_route(request):
@@ -86,7 +100,8 @@ def rule_based_route(request):
                     "weather", "price of", "stock"]
     if any(kw in r for kw in web_keywords):
         return "web"
-    return None  # no clear rule -> fall back to the model
+    return None
+
 def model_based_route(request):
     """Ask a coordinator model to pick a worker, only when rules don't decide."""
     print("\n[Orchestrator] No rule matched — asking coordinator model to route...")
@@ -98,18 +113,17 @@ def model_based_route(request):
         "Reply with only that one word, nothing else."
     )
     choice = ask_ollama(request, model="qwen3:14b", system=system).strip().lower()
-    # Be defensive: pull a valid worker name out of whatever it said.
     if "code" in choice:
         return "code"
     if "web" in choice:
         return "web"
     return "reasoning"
-def orchestrate(request):
+
+def orchestrate(request, history=None):
     """The CO: route the request to the right worker (rules first, model fallback)."""
     print(f"\n=== ORCHESTRATOR received: {request} ===")
-
-    # Memory command: "remember ..." stores a fact instead of routing.
     stripped = request.strip()
+    # Memory command: "remember ..." stores a fact instead of routing.
     if stripped.lower().startswith("remember"):
         fact = stripped[len("remember"):].lstrip(" :,that").strip()
         if fact:
@@ -117,7 +131,7 @@ def orchestrate(request):
             print("[Orchestrator] Saved to memory.")
             return f"Noted. I'll remember that: {fact}"
         return "There was nothing specific to remember."
-# Identity questions: Butler answers directly, in character.
+    # Identity questions: Butler answers directly, in character.
     r_lower = stripped.lower()
     identity_triggers = ["who are you", "who am i speaking", "what are you",
                          "your name", "introduce yourself", "who is this"]
@@ -125,23 +139,18 @@ def orchestrate(request):
         print("[Orchestrator] Identity question — Butler answers directly.")
         reply = ask_ollama(stripped, model=BUTLER_MODEL, system=BUTLER_SYSTEM)
         return clean_leak(reply)
-
     worker_name = rule_based_route(request)
     if worker_name is None:
         worker_name = model_based_route(request)
-    worker = WORKERS[worker_name]
-    raw_result = worker(request)
-
-    # Butler delivers the result in his voice (facts preserved exactly).
+    if worker_name == "reasoning":
+        raw_result = reasoning_worker(request, history=history)
+    else:
+        raw_result = WORKERS[worker_name](request)
     print("\n[Orchestrator] Butler is delivering the result...")
     return butler_voice(request, raw_result)
 
-# Self-test: one clearly-code request, one clearly-reasoning request.
 if __name__ == "__main__":
     print("\n########## TEST 1: a compute task ##########")
-    r1 = orchestrate("What is the SHA-256 hash of 'butler test'?")
-    print("\n>>> RESULT 1:\n", r1)
-
-    print("\n\n########## TEST 2: a reasoning task ##########")
-    r2 = orchestrate("Explain in two sentences why network segmentation improves security.")
-    print("\n>>> RESULT 2:\n", r2)
+    print(orchestrate("What is the SHA-256 hash of 'butler test'?"))
+    print("\n########## TEST 2: a reasoning task ##########")
+    print(orchestrate("Explain in two sentences why network segmentation improves security."))
