@@ -9,8 +9,9 @@ research). No cloud, no telemetry, no API keys. Everything runs on your own hard
 
 ## What it does
 
-- **Browser chat UI** (Gradio) with live status updates — fully local.
-- **Butler persona** — responses delivered in character by BigButler, who presents
+- **Browser chat UI** — custom HTML/CSS/JS frontend served by the FastAPI backend,
+  fully local at http://127.0.0.1:8000.
+- **Butler persona** — responses delivered in character by Butler, who presents
   the workers' results faithfully (facts/numbers/hashes preserved exactly), in
   English, cleaned of model artifacts.
 - **Three specialist workers:**
@@ -35,9 +36,8 @@ Then pull the models:
 
     ollama pull qwen3:8b
     ollama pull qwen3:14b
-    ollama pull huihui_ai/qwen3-abliterated:14b
 
-(8B = code/worker model; 14B = coordinator/reasoning/web model; abliterated 14B = Butler's voice.)
+(8B = code/worker model; 14B = coordinator/reasoning/web/Butler voice model.)
 
 ## Setup
 
@@ -48,8 +48,8 @@ Then pull the models:
 ## Running it
 
 Make sure **Ollama** and **Docker Desktop** are running, then double-click
-`launch.bat` (or run `python ui.py`). Open the printed URL (usually
-http://127.0.0.1:7860) and chat with Butler.
+`launch.bat` (or run `python server.py`). Open http://127.0.0.1:8000 and chat
+with Butler.
 
 Examples:
 - "What is the SHA-256 hash of 'butler test'?" — code worker + sandbox
@@ -70,7 +70,9 @@ Examples:
 
 ## Project structure
 
-    ui.py                 Browser chat UI (Gradio) with live status
+    server.py             FastAPI backend + static file serving
+    static/
+      index.html          Custom dark/teal chat UI (HTML/CSS/JS)
     launch.bat            One-click launcher (Windows)
     core/
       ollama_client.py    Direct local LLM communication
@@ -80,7 +82,7 @@ Examples:
       memory.py           Local persistent memory (JSON-backed)
       orchestrator.py     Hybrid routing + memory + web + Butler persona delivery
     deprecated/           Earlier CrewAI experiments (kept for reference)
-    requirements.txt      Dependencies (requests, gradio, ddgs)
+    requirements.txt      Dependencies (requests, fastapi, uvicorn, ddgs)
 
 ## Security notes
 

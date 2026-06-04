@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 echo === Butler ===
-echo Activating environment and starting the UI...
+echo Activating environment and starting the server...
 call venv\Scripts\activate.bat
-python ui.py
+python server.py
 pause

@@ -33,3 +33,8 @@ async def chat(req: ChatRequest):
         return {"worker": worker, "reply": reply}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=False)
