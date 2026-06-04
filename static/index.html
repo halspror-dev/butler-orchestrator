@@ -115,9 +115,14 @@
     .butler-msg br { display: block; content: ''; margin-top: 2px; }
 
     /* Thinking indicator */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
     .thinking .butler-msg {
       color: #484f58;
       font-style: italic;
+      animation: pulse 1.4s ease-in-out infinite;
     }
 
     /* ── Input bar ── */
@@ -239,7 +244,7 @@
       thinkingTag.textContent = '…';
       const thinkingMsg = document.createElement('div');
       thinkingMsg.className = 'butler-msg';
-      thinkingMsg.textContent = 'Working on it…';
+      thinkingMsg.textContent = '⚙ thinking…';
       thinkingWrapper.append(thinkingTag, thinkingMsg);
       conv.appendChild(thinkingWrapper);
       scrollToBottom();
