@@ -10,14 +10,16 @@ research). No cloud, no telemetry, no API keys. Everything runs on your own hard
 ## What it does
 
 - **Browser chat UI** — custom HTML/CSS/JS frontend served by the FastAPI backend,
-  fully local at http://127.0.0.1:8000.
+  fully local at http://127.0.0.1:8000. It supports session-based conversation history.
 - **Butler persona** — responses delivered in character by Butler, who presents
   the workers' results faithfully (facts/numbers/hashes preserved exactly), in
-  English, cleaned of model artifacts.
+  English, and stripped of model artifacts (like `<think>` tags).
 - **Three specialist workers:**
   - **Code** — writes and runs Python in a hardened Docker sandbox (no network,
     non-root, resource-capped, read-only, auto-removed).
-  - **Reasoning** — explanation and analysis from general knowledge, memory-aware.
+  - **Reasoning** — explanation and analysis. Features **Independent Reasoning**: 
+    the worker is programmed to prioritize logical correctness over agreeableness, 
+    disagreeing with the user or "answer keys" if they are factually wrong.
   - **Web** — live internet search (DuckDuckGo); fetched content is treated as
     untrusted data, not instructions.
 - **Persistent memory** — tell it "remember ..." and it stores facts locally
@@ -62,7 +64,7 @@ Examples:
 
 - **Models** — set in `core/orchestrator.py` and `core/agent.py` (`model=` args).
   Butler's voice model is `BUTLER_MODEL` in `core/orchestrator.py`.
-- **VRAM / unload time** — Ollama's `keep_alive`. Default unload ~5 min after use.
+- **VRAM / unload time** — Controlled by Ollama's `keep_alive`. Default unload ~5 min after use.
   Set `OLLAMA_KEEP_ALIVE` env var (`30m`, `0` = immediate, `-1` = keep loaded).
 - **Sandbox hardening** — security flags in `core/sandbox.py`.
 - **Memory** — stored in `memory.json` (local, gitignored, human-readable).
@@ -71,7 +73,7 @@ Examples:
 ## Project structure
 
     server.py             FastAPI backend + static file serving
-    static/
+    static/               Frontend assets
       index.html          Custom dark/teal chat UI (HTML/CSS/JS)
     launch.bat            One-click launcher (Windows)
     core/
@@ -91,7 +93,8 @@ Examples:
 - Web-fetched content is treated as untrusted data — the web worker is instructed to
   ignore any instructions embedded in results. Its blast radius is limited: it can
   only report text, never run code or touch the system.
-- Butler preserves facts exactly and responds only in English.
+- **Butler's Absolute Rules**: The persona must respond in English ONLY and 
+  preserve technical data (hashes, code output) with 100% fidelity.
 - `memory.json` holds personal facts and is gitignored.
 
 ## Background
