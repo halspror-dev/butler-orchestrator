@@ -89,13 +89,21 @@ def respond(message, history):
         yield "🌐  Searching the web…"
     else:
         yield "…  Working on it…"
+    WORKER_LABELS = {
+        "code":      "⚙ code",
+        "web":       "🌐 web",
+        "reasoning": "🧠 reasoning",
+        "butler":    "🧠 butler",
+        "memory":    "💾 memory",
+    }
     try:
         transcript = format_history(history)
-        result = orchestrate(message, history=transcript)
+        worker_name, result = orchestrate(message, history=transcript)
     except Exception as e:
         yield f"(Error: {e})"
         return
-    yield result
+    label = WORKER_LABELS.get(worker_name, worker_name)
+    yield f"_{label}_\n\n{result}"
 
 with gr.Blocks(title="Butler") as demo:
     gr.HTML(

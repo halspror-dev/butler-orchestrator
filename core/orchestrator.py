@@ -120,7 +120,9 @@ def model_based_route(request):
     return "reasoning"
 
 def orchestrate(request, history=None):
-    """The CO: route the request to the right worker (rules first, model fallback)."""
+    """The CO: route the request to the right worker (rules first, model fallback).
+    Returns (worker_name, response_text). worker_name is one of:
+    'code', 'web', 'reasoning', 'butler' (identity), 'memory'."""
     print(f"\n=== ORCHESTRATOR received: {request} ===")
     stripped = request.strip()
     # Memory command: "remember ..." stores a fact instead of routing.
@@ -129,8 +131,8 @@ def orchestrate(request, history=None):
         if fact:
             save_memory(fact)
             print("[Orchestrator] Saved to memory.")
-            return f"Noted. I'll remember that: {fact}"
-        return "There was nothing specific to remember."
+            return ("memory", f"Noted. I'll remember that: {fact}")
+        return ("memory", "There was nothing specific to remember.")
     # Identity questions: Butler answers directly, in character.
     r_lower = stripped.lower()
     identity_triggers = ["who are you", "who am i speaking", "what are you",
@@ -138,7 +140,7 @@ def orchestrate(request, history=None):
     if any(t in r_lower for t in identity_triggers):
         print("[Orchestrator] Identity question — Butler answers directly.")
         reply = ask_ollama(stripped, model=BUTLER_MODEL, system=BUTLER_SYSTEM)
-        return clean_leak(reply)
+        return ("butler", clean_leak(reply))
     worker_name = rule_based_route(request)
     if worker_name is None:
         worker_name = model_based_route(request)
@@ -147,7 +149,7 @@ def orchestrate(request, history=None):
     else:
         raw_result = WORKERS[worker_name](request)
     print("\n[Orchestrator] Butler is delivering the result...")
-    return butler_voice(request, raw_result)
+    return (worker_name, butler_voice(request, raw_result))
 
 if __name__ == "__main__":
     print("\n########## TEST 1: a compute task ##########")
