@@ -7,249 +7,96 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1117' rx='6'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' fill='%232dd4bf' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: #0d1117;
-      color: #e6edf3;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* ── Header ── */
-    header {
-      flex-shrink: 0;
-      text-align: center;
-      padding: 14px 0 10px;
-      border-bottom: 1px solid #21262d;
-    }
-    header h1 {
-      color: #2dd4bf;
-      font-family: 'Consolas', 'SF Mono', monospace;
-      font-size: 1.35rem;
-      font-weight: 600;
-      letter-spacing: 6px;
-    }
-    header p {
-      color: #6e7681;
-      font-size: 0.72rem;
-      margin-top: 3px;
-      letter-spacing: 0.5px;
-    }
-
-    /* ── Scrollable message area ── */
-    #conv-wrapper {
-      flex: 1;
-      overflow-y: auto;
-      scroll-behavior: smooth;
-    }
+    body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    header { flex-shrink: 0; text-align: center; padding: 14px 0 10px; border-bottom: 1px solid #21262d; }
+    header h1 { color: #2dd4bf; font-family: 'Consolas', 'SF Mono', monospace; font-size: 1.35rem; font-weight: 600; letter-spacing: 6px; }
+    header p { color: #6e7681; font-size: 0.72rem; margin-top: 3px; letter-spacing: 0.5px; }
+    #conv-wrapper { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
     #conv-wrapper::-webkit-scrollbar { width: 6px; }
     #conv-wrapper::-webkit-scrollbar-track { background: transparent; }
     #conv-wrapper::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-
-    #conversation {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 24px 20px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    /* ── User messages ── */
-    .user-msg {
-      align-self: flex-end;
-      max-width: 72%;
-      background: #1c2733;
-      border: 1px solid rgba(45, 212, 191, 0.2);
-      border-radius: 12px 12px 2px 12px;
-      padding: 10px 14px;
-      font-size: 0.9rem;
-      line-height: 1.55;
-      color: #e6edf3;
-    }
-
-    /* ── Butler messages ── */
-    .butler-wrapper {
-      align-self: flex-start;
-      max-width: 78%;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .worker-tag {
-      font-family: 'Consolas', 'SF Mono', monospace;
-      font-size: 0.62rem;
-      font-weight: 700;
-      color: #2dd4bf;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      padding-left: 14px;
-      opacity: 0.85;
-    }
-
-    .butler-msg {
-      background: #161b22;
-      border-left: 2px solid #2dd4bf;
-      border-radius: 0 12px 12px 0;
-      padding: 10px 14px;
-      font-size: 0.9rem;
-      line-height: 1.65;
-      color: #e6edf3;
-    }
-
-    /* Markdown rendering inside Butler replies */
+    #conversation { max-width: 800px; margin: 0 auto; padding: 24px 20px 12px; display: flex; flex-direction: column; gap: 14px; }
+    .user-msg { align-self: flex-end; max-width: 72%; background: #1c2733; border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 12px 12px 2px 12px; padding: 10px 14px; font-size: 0.9rem; line-height: 1.55; color: #e6edf3; }
+    .butler-wrapper { align-self: flex-start; max-width: 78%; display: flex; flex-direction: column; gap: 5px; }
+    .worker-tag { font-family: 'Consolas', 'SF Mono', monospace; font-size: 0.62rem; font-weight: 700; color: #2dd4bf; text-transform: uppercase; letter-spacing: 2px; padding-left: 14px; opacity: 0.85; }
+    .butler-msg { background: #161b22; border-left: 2px solid #2dd4bf; border-radius: 0 12px 12px 0; padding: 10px 14px; font-size: 0.9rem; line-height: 1.65; color: #e6edf3; }
     .butler-msg strong { color: #e6edf3; font-weight: 600; }
-    .butler-msg em     { color: #8b949e; font-style: italic; }
-    .butler-msg code {
-      font-family: 'Consolas', 'SF Mono', monospace;
-      font-size: 0.87em;
-      color: #2dd4bf;
-      background: #0d1117;
-      padding: 1px 5px;
-      border-radius: 3px;
-    }
+    .butler-msg em { color: #8b949e; font-style: italic; }
+    .butler-msg code { font-family: 'Consolas', 'SF Mono', monospace; font-size: 0.87em; color: #2dd4bf; background: #0d1117; padding: 1px 5px; border-radius: 3px; }
     .butler-msg br { display: block; content: ''; margin-top: 2px; }
-
-    /* Thinking indicator */
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.4; }
-    }
-    .thinking .butler-msg {
-      color: #484f58;
-      font-style: italic;
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-
-    /* ── Input bar ── */
-    #input-bar {
-      flex-shrink: 0;
-      background: #161b22;
-      border-top: 1px solid #21262d;
-      padding: 12px 20px;
-    }
-    #input-inner {
-      max-width: 800px;
-      margin: 0 auto;
-      display: flex;
-      gap: 8px;
-    }
-
-    #input {
-      flex: 1;
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      color: #e6edf3;
-      padding: 10px 14px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.15s;
-    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .thinking .butler-msg { color: #484f58; font-style: italic; animation: pulse 1.4s ease-in-out infinite; }
+    #input-bar { flex-shrink: 0; background: #161b22; border-top: 1px solid #21262d; padding: 12px 20px; }
+    #input-inner { max-width: 800px; margin: 0 auto; display: flex; gap: 8px; }
+    #input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; padding: 10px 14px; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.15s; }
     #input::placeholder { color: #484f58; }
-    #input:focus        { border-color: #2dd4bf; }
-
-    #send {
-      background: #2dd4bf;
-      color: #0d1117;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 22px;
-      font-size: 0.88rem;
-      font-weight: 700;
-      font-family: inherit;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      transition: background 0.15s;
-      flex-shrink: 0;
-    }
-    #send:hover    { background: #5eead4; }
+    #input:focus { border-color: #2dd4bf; }
+    #send { background: #2dd4bf; color: #0d1117; border: none; border-radius: 8px; padding: 10px 22px; font-size: 0.88rem; font-weight: 700; font-family: inherit; letter-spacing: 0.5px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+    #send:hover { background: #5eead4; }
     #send:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
   </style>
 </head>
 <body>
-
   <header>
     <h1>BUTLER</h1>
-    <p>local · private · at your service, sir</p>
+    <p>local - private - at your service, sir</p>
   </header>
-
   <div id="conv-wrapper">
     <div id="conversation"></div>
   </div>
-
   <div id="input-bar">
     <div id="input-inner">
-      <input id="input" type="text" placeholder="Speak to Butler…" autocomplete="off">
+      <input id="input" type="text" placeholder="Speak to Butler..." autocomplete="off">
       <button id="send">Send</button>
     </div>
   </div>
-
   <script>
     const wrapper = document.getElementById('conv-wrapper');
     const conv    = document.getElementById('conversation');
     const input   = document.getElementById('input');
     const btn     = document.getElementById('send');
 
-    function scrollToBottom() {
-      wrapper.scrollTop = wrapper.scrollHeight;
-    }
+    function scrollToBottom() { wrapper.scrollTop = wrapper.scrollHeight; }
 
-    // Build history from data-raw attributes — captured BEFORE the new user
-    // message is appended, so the current turn isn't duplicated.
     function buildHistory() {
-      return Array.from(conv.querySelectorAll('[data-raw]'))
-        .map(el => el.dataset.raw)
-        .join('\n');
+      return Array.from(conv.querySelectorAll('[data-raw]')).map(el => el.dataset.raw).join('\n');
     }
 
-    // Minimal markdown → HTML: **bold**, *italic*, `code`, line breaks.
-    // Input is HTML-escaped first so injected content can't break the DOM.
     function mdToHtml(text) {
       return text
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g,     '<em>$1</em>')
-        .replace(/`([^`]+)`/g,     '<code>$1</code>')
-        .replace(/\n/g,            '<br>');
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
     }
 
     async function send() {
       const message = input.value.trim();
       if (!message || btn.disabled) return;
-
-      // Snapshot history before appending this turn
       const history = buildHistory();
-
       input.value = '';
       btn.disabled = true;
 
-      // User bubble
       const userEl = document.createElement('div');
       userEl.className = 'user-msg';
       userEl.dataset.raw = `User: ${message}`;
       userEl.textContent = message;
       conv.appendChild(userEl);
 
-      // Thinking placeholder
       const thinkingWrapper = document.createElement('div');
       thinkingWrapper.className = 'butler-wrapper thinking';
       const thinkingTag = document.createElement('div');
       thinkingTag.className = 'worker-tag';
-      thinkingTag.textContent = '…';
+      thinkingTag.textContent = '...';
       const thinkingMsg = document.createElement('div');
       thinkingMsg.className = 'butler-msg';
-      thinkingMsg.textContent = '⚙ thinking…';
+      thinkingMsg.textContent = 'thinking...';
       thinkingWrapper.append(thinkingTag, thinkingMsg);
       conv.appendChild(thinkingWrapper);
       scrollToBottom();
 
-      let reply, worker;
+      let reply, worker, proposal;
       try {
         const resp = await fetch('/chat', {
           method: 'POST',
@@ -258,32 +105,36 @@
         });
         const data = await resp.json();
         if (data.error) throw new Error(data.error);
-        reply  = data.reply;
-        worker = data.worker;
+        reply    = data.reply;
+        worker   = data.worker;
+        proposal = data.proposed_memory;
       } catch (e) {
         reply  = `(Error: ${e.message})`;
         worker = 'error';
       }
 
-      // Replace thinking placeholder with the real reply
       conv.removeChild(thinkingWrapper);
 
       const butlerWrapper = document.createElement('div');
       butlerWrapper.className = 'butler-wrapper';
-
       const tag = document.createElement('div');
       tag.className = 'worker-tag';
       tag.textContent = worker;
-
       const butlerMsg = document.createElement('div');
       butlerMsg.className = 'butler-msg';
       butlerMsg.dataset.raw = `Butler: ${reply}`;
       butlerMsg.innerHTML = mdToHtml(reply);
-
       butlerWrapper.append(tag, butlerMsg);
       conv.appendChild(butlerWrapper);
-      scrollToBottom();
 
+      if (proposal) {
+        const memEl = document.createElement('div');
+        memEl.style.cssText = 'align-self:flex-start;color:#2dd4bf;font-size:0.8rem;font-style:italic;padding-left:14px;margin-top:2px;opacity:0.9;';
+        memEl.textContent = '\u{1F4BE} I could remember: ' + proposal;
+        conv.appendChild(memEl);
+      }
+
+      scrollToBottom();
       btn.disabled = false;
       input.focus();
     }
@@ -292,6 +143,5 @@
     input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
     input.focus();
   </script>
-
 </body>
 </html>

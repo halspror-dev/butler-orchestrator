@@ -29,11 +29,10 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 async def chat(req: ChatRequest):
     try:
-        worker, reply = orchestrate(req.message, history=req.history or None)
-        return {"worker": worker, "reply": reply}
+        worker, reply, proposal = orchestrate(req.message, history=req.history or None)
+        return {"worker": worker, "reply": reply, "proposed_memory": proposal}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
 
 if __name__ == "__main__":
     import uvicorn
