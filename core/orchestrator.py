@@ -208,10 +208,9 @@ def orchestrate(request, history=None):
         print(f"[Timing] TOTAL: {time.time() - t_start:.2f}s")
         return (worker_name, clean_leak(raw_result), proposal)
 
-    print("\n[Orchestrator] Butler is delivering the result...")
-    final = butler_voice(request, raw_result)
+   # Code worker now answers in Butler's persona directly — no second call needed.
     print(f"[Timing] TOTAL: {time.time() - t_start:.2f}s")
-    return (worker_name, final, proposal)
+    return (worker_name, clean_leak(raw_result), None)
 
 if __name__ == "__main__":
     print(orchestrate("What is the SHA-256 hash of 'butler test'?"))
