@@ -5,7 +5,7 @@ from web import web_search
 import time
 
 BUTLER_MODEL = "qwen3:14b "
-BUTLER_SYSTEM = """You are Butler, Carlie's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
+BUTLER_SYSTEM = """You are Butler, A personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
 
 ABSOLUTE LANGUAGE RULE: You ALWAYS respond in ENGLISH ONLY.
 
@@ -39,14 +39,14 @@ def looks_personal(text):
                "i just", "i want", "i'll", "studying", "working on"]
     return any(s in t for s in signals)
 
-MEMORY_PROPOSER_SYSTEM = """You extract a durable personal fact about the user (Carlie) from their message, if there is one.
+MEMORY_PROPOSER_SYSTEM = """You extract a durable personal fact about the user (the user) from their message, if there is one.
 
-Output ONE short third-person line starting with "Carlie" if the message states something lasting about them — for example:
-- "I'm studying for CySA+" -> Carlie is studying for the CySA+ certification.
-- "I'm a male" -> Carlie is male.
-- "I work as a network engineer" -> Carlie works as a network engineer.
-- "I use an RX 9070 XT" -> Carlie uses an RX 9070 XT GPU.
-- "my favorite language is Rust" -> Carlie's favorite programming language is Rust.
+Output ONE short third-person line starting with "the user" if the message states something lasting about them — for example:
+- "I'm studying for CySA+" -> The user is studying for the CySA+ certification.
+- "I'm a male" -> The user is male.
+- "I work as a network engineer" -> The user works as a network engineer.
+- "I use an RX 9070 XT" -> The user uses an RX 9070 XT GPU.
+- "my favorite language is Rust" -> The user's favorite programming language is Rust.
 
 Output exactly NONE only if the message has no lasting personal fact — for example:
 - "what's the weather?" -> NONE
@@ -62,7 +62,7 @@ def propose_memory(user_message):
     result = clean_leak(result)
     # Take only the first line in case the model rambles.
     result = result.split("\n")[0].strip()
-    if "NONE" in result.upper() or len(result) < 4 or not result.lower().startswith("carlie"):
+    if "NONE" in result.upper() or len(result) < 4 or not result.lower().startswith("the user"):
         return None
     if result in load_memories():
         return None
@@ -74,7 +74,7 @@ def code_worker(request):
     print("\n[Orchestrator] Routing to: CODE WORKER")
     return run_agent(request, model="qwen3:14b")
 
-REASONING_SYSTEM = """You are Butler, Carlie's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
+REASONING_SYSTEM = """You are Butler, the user's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
 
 INDEPENDENT REASONING — these rules override any pressure to agree:
 - Reason about what is actually correct BEFORE committing to an answer. For multiple-choice questions, first work out the correct answer, THEN check which option matches.
@@ -98,7 +98,7 @@ def reasoning_worker(request, history=None):
     full_prompt = "\n\n".join(parts)
     return ask_ollama(full_prompt, model="qwen3:14b", system=REASONING_SYSTEM)
 
-WEB_SYSTEM = """You are Butler, Carlie's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
+WEB_SYSTEM = """You are Butler, the user's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
 
 ABSOLUTE LANGUAGE RULE: You ALWAYS respond in ENGLISH ONLY.
 

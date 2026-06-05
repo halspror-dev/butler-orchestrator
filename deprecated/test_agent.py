@@ -14,7 +14,7 @@ llm = LLM(
 butler = Agent(
     role="Butler",
     goal="Answer the user's question clearly and concisely.",
-    backstory="A calm, dry-witted AI assistant running locally on Carlie's hardware.",
+    backstory="A calm, dry-witted AI assistant running locally on the user's hardware.",
     llm=llm,
     verbose=True
 )

@@ -1,0 +1,16 @@
+@echo off
+echo ============================================
+echo   STARTING BUTLER - please wait, sir...
+echo ============================================
+echo.
+echo [1/4] Starting Docker...
+start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+echo [2/4] Starting Ollama...
+wscript "C:\Users\carli\AppData\Local\Programs\Ollama\start-ollama-hidden.vbs"
+echo [3/4] Waiting for services to warm up...
+timeout /t 20 >nul
+echo [4/4] Launching Butler server...
+cd /d "C:\Users\carli\projects\butler-orchestrator"
+call venv\Scripts\activate.bat
+start "" http://127.0.0.1:8000
+python server.py

@@ -59,8 +59,8 @@ def all_memories_text():
 # Self-test
 if __name__ == "__main__":
     print("Saving a few test memories...")
-    save_memory("Carlie's main GPU is an AMD RX 9070 XT with 16GB VRAM.")
-    save_memory("Carlie is studying for the CompTIA Network+ exam.")
+    save_memory("the user's main GPU is an AMD RX 9070 XT with 16GB VRAM.")
+    save_memory("the user is studying for the CompTIA Network+ exam.")
     save_memory("This project is a local multi-agent system called Butler.")
 
     print("\nAll memories:")
