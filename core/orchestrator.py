@@ -72,10 +72,24 @@ You are a research assistant. Answer using ONLY the search results provided. Thi
 
 Respond ONLY with your final answer — no notes, no meta-commentary."""
 
-def web_worker(request):
+def web_worker(request, history=None):
     """Worker that searches the web, then extracts the answer. Web content is UNTRUSTED."""
     print("\n[Orchestrator] Routing to: WEB WORKER")
-    results = web_search(request)
+
+    # If there's conversation context, reformulate the message into a standalone search query.
+    search_query = request
+    if history:
+        reformulate_system = (
+            "You turn a user's message into a single, standalone web search query. "
+            "Use the conversation context to resolve pronouns and references (e.g. 'he', 'that') "
+            "into specific names/terms. Reply with ONLY the search query text — no quotes, no explanation."
+        )
+        reformulate_prompt = f"CONVERSATION:\n{history}\n\nUSER MESSAGE: {request}\n\nStandalone search query:"
+        search_query = ask_ollama(reformulate_prompt, model="qwen3:8b", system=reformulate_system).strip()
+        search_query = clean_leak(search_query)
+        print(f"[Orchestrator] Reformulated search query: {search_query}")
+
+    results = web_search(search_query)
     prompt = f"USER QUESTION: {request}\n\nSEARCH RESULTS:\n{results}"
     return ask_ollama(prompt, model="qwen3:8b", system=WEB_SYSTEM)
 
@@ -88,19 +102,30 @@ WORKERS = {
 # ---- ROUTING ----
 
 def rule_based_route(request):
-    """Fast deterministic routing for obvious cases. Returns a worker name or None."""
-    r = request.lower()
-    code_keywords = ["calculate", "compute", "hash", "count", "convert",
-                     "how many", "factorial", "prime", "sum of", "average",
-                     "run code", "python", "encode", "decode"]
-    if any(kw in r for kw in code_keywords):
-        return "code"
-    web_keywords = ["search", "look up", "latest", "current", "news",
-                    "today", "recent", "who is", "what is the latest",
-                    "weather", "price of", "stock"]
-    if any(kw in r for kw in web_keywords):
+    r = request.lower().strip()
+    
+    # WEB: current/live info signals (check FIRST — "latest hash algorithm" should be web, not code)
+    web_signals = ["search", "look up", "google", "latest", "current", "news", "today",
+                   "recent", "weather", "price of", "stock", "who is", "who's the",
+                   "what's the latest", "right now", "this year", "2026", "score"]
+    if any(kw in r for kw in web_signals):
         return "web"
-    return None
+    
+    # CODE: must actually compute, not just mention computing
+    code_signals = ["calculate", "compute the", "what is the hash", "sha256", "sha-256",
+                    "md5", "factorial of", "is prime", "convert", "encode", "decode",
+                    "run this code", "run code", "execute"]
+    if any(kw in r for kw in code_signals):
+        return "code"
+    
+    # REASONING: explanation/opinion patterns (catch the common question-starts)
+    reasoning_starts = ["explain", "why ", "how does", "how do", "what is the difference",
+                        "what are the tradeoffs", "compare", "what do you think",
+                        "should i", "what's the difference", "describe"]
+    if any(r.startswith(kw) or kw in r for kw in reasoning_starts):
+        return "reasoning"
+    
+    return None  # genuinely ambiguous → model router
 
 def model_based_route(request):
     """Ask a coordinator model to pick a worker, only when rules don't decide."""
@@ -153,6 +178,8 @@ def orchestrate(request, history=None):
     t_worker = time.time()
     if worker_name == "reasoning":
         raw_result = reasoning_worker(request, history=history)
+    elif worker_name == "web":
+        raw_result = web_worker(request, history=history)
     else:
         raw_result = WORKERS[worker_name](request)
     print(f"[Timing] Worker ({worker_name}): {time.time() - t_worker:.2f}s")
