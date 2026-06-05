@@ -8,9 +8,18 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    header { flex-shrink: 0; text-align: center; padding: 14px 0 10px; border-bottom: 1px solid #21262d; }
+    header { position: relative; flex-shrink: 0; text-align: center; padding: 14px 0 10px; border-bottom: 1px solid #21262d; }
     header h1 { color: #2dd4bf; font-family: 'Consolas', 'SF Mono', monospace; font-size: 1.35rem; font-weight: 600; letter-spacing: 6px; }
     header p { color: #6e7681; font-size: 0.72rem; margin-top: 3px; letter-spacing: 0.5px; }
+    #mem-toggle { position: absolute; top: 12px; right: 16px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; font-size: 1.1rem; padding: 4px 10px; cursor: pointer; transition: border-color 0.15s; }
+    #mem-toggle:hover { border-color: #2dd4bf; }
+    #mem-drawer { position: fixed; top: 0; right: -340px; width: 320px; height: 100vh; background: #161b22; border-left: 1px solid #21262d; padding: 20px 18px; overflow-y: auto; transition: right 0.25s ease; z-index: 100; }
+    #mem-drawer.open { right: 0; }
+    #mem-drawer h2 { color: #2dd4bf; font-family: 'Consolas', monospace; font-size: 0.95rem; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; }
+    .mem-item { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 0.82rem; line-height: 1.5; color: #e6edf3; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .mem-del { background: none; border: none; color: #6e7681; cursor: pointer; font-size: 0.95rem; flex-shrink: 0; transition: color 0.15s; }
+    .mem-del:hover { color: #f85149; }
+    .mem-empty { color: #6e7681; font-size: 0.82rem; font-style: italic; }
     #conv-wrapper { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
     #conv-wrapper::-webkit-scrollbar { width: 6px; }
     #conv-wrapper::-webkit-scrollbar-track { background: transparent; }
@@ -40,21 +49,33 @@
   <header>
     <h1>BUTLER</h1>
     <p>local - private - at your service, sir</p>
+    <button id="mem-toggle" title="Saved memories">&#129504;</button>
   </header>
+
+  <div id="mem-drawer">
+    <h2>Saved Memories</h2>
+    <div id="mem-list"></div>
+  </div>
+
   <div id="conv-wrapper">
     <div id="conversation"></div>
   </div>
+
   <div id="input-bar">
     <div id="input-inner">
       <input id="input" type="text" placeholder="Speak to Butler..." autocomplete="off">
       <button id="send">Send</button>
     </div>
   </div>
+
   <script>
-    const wrapper = document.getElementById('conv-wrapper');
-    const conv    = document.getElementById('conversation');
-    const input   = document.getElementById('input');
-    const btn     = document.getElementById('send');
+    const wrapper   = document.getElementById('conv-wrapper');
+    const conv      = document.getElementById('conversation');
+    const input     = document.getElementById('input');
+    const btn       = document.getElementById('send');
+    const memToggle = document.getElementById('mem-toggle');
+    const memDrawer = document.getElementById('mem-drawer');
+    const memList   = document.getElementById('mem-list');
 
     function scrollToBottom() { wrapper.scrollTop = wrapper.scrollHeight; }
 
@@ -70,6 +91,47 @@
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\n/g, '<br>');
     }
+
+    async function loadMemories() {
+      try {
+        const r = await fetch('/memories');
+        const d = await r.json();
+        memList.innerHTML = '';
+        if (!d.memories || d.memories.length === 0) {
+          memList.innerHTML = '<div class="mem-empty">No memories stored yet.</div>';
+          return;
+        }
+        d.memories.forEach((m, i) => {
+          const item = document.createElement('div');
+          item.className = 'mem-item';
+          const txt = document.createElement('span');
+          txt.textContent = m;
+          const del = document.createElement('button');
+          del.className = 'mem-del';
+          del.textContent = '\u2715';
+          del.title = 'Delete';
+          del.addEventListener('click', async () => {
+            try {
+              await fetch('/delete_memory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index: i })
+              });
+              loadMemories();
+            } catch (e) {}
+          });
+          item.append(txt, del);
+          memList.appendChild(item);
+        });
+      } catch (e) {
+        memList.innerHTML = '<div class="mem-empty">Could not load memories.</div>';
+      }
+    }
+
+    memToggle.addEventListener('click', () => {
+      memDrawer.classList.toggle('open');
+      if (memDrawer.classList.contains('open')) loadMemories();
+    });
 
     async function send() {
       const message = input.value.trim();
@@ -127,28 +189,22 @@
       butlerWrapper.append(tag, butlerMsg);
       conv.appendChild(butlerWrapper);
 
-     if (proposal) {
+      if (proposal) {
         const memEl = document.createElement('div');
         memEl.style.cssText = 'align-self:flex-start;max-width:78%;background:#161b22;border:1px solid rgba(45,212,191,0.3);border-radius:8px;padding:10px 14px;margin-top:2px;display:flex;flex-direction:column;gap:8px;';
-
-        const memText = document.createElement('div');
-        memText.style.cssText = 'color:#2dd4bf;font-size:0.82rem;font-style:italic;';
-        memText.textContent = '💾 Remember this? — ' + proposal;
-
+        const memTextEl = document.createElement('div');
+        memTextEl.style.cssText = 'color:#2dd4bf;font-size:0.82rem;font-style:italic;';
+        memTextEl.textContent = '\u{1F4BE} Remember this? - ' + proposal;
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex;gap:8px;';
-
         const yesBtn = document.createElement('button');
         yesBtn.textContent = 'Yes';
         yesBtn.style.cssText = 'background:#2dd4bf;color:#0d1117;border:none;border-radius:6px;padding:4px 16px;font-size:0.78rem;font-weight:700;cursor:pointer;';
-
         const noBtn = document.createElement('button');
         noBtn.textContent = 'No';
         noBtn.style.cssText = 'background:#21262d;color:#8b949e;border:none;border-radius:6px;padding:4px 16px;font-size:0.78rem;font-weight:700;cursor:pointer;';
-
         yesBtn.addEventListener('click', async () => {
-          yesBtn.disabled = true;
-          noBtn.disabled = true;
+          yesBtn.disabled = true; noBtn.disabled = true;
           try {
             const r = await fetch('/save_memory', {
               method: 'POST',
@@ -160,20 +216,19 @@
               memEl.innerHTML = '';
               const saved = document.createElement('div');
               saved.style.cssText = 'color:#2dd4bf;font-size:0.82rem;';
-              saved.textContent = '✓ Saved to memory: ' + proposal;
+              saved.textContent = '\u2713 Saved to memory: ' + proposal;
               memEl.appendChild(saved);
+              if (memDrawer.classList.contains('open')) loadMemories();
             } else {
-              memText.textContent = '⚠ Could not save.';
+              memTextEl.textContent = 'Could not save.';
             }
           } catch (e) {
-            memText.textContent = '⚠ Error saving: ' + e.message;
+            memTextEl.textContent = 'Error saving: ' + e.message;
           }
         });
-
         noBtn.addEventListener('click', () => { conv.removeChild(memEl); });
-
         btnRow.append(yesBtn, noBtn);
-        memEl.append(memText, btnRow);
+        memEl.append(memTextEl, btnRow);
         conv.appendChild(memEl);
       }
 

@@ -24,6 +24,16 @@ def save_memory(fact):
             json.dump(memories, f, indent=2)
     return memories
 
+def delete_memory(index):
+    """Delete a memory by its 0-based index. Returns (removed_fact, updated_list) or (None, list)."""
+    memories = load_memories()
+    if 0 <= index < len(memories):
+        removed = memories.pop(index)
+        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(memories, f, indent=2)
+        return removed, memories
+    return None, memories
+
 def search_memories(query, limit=5):
     """Naive keyword search: return memories sharing words with the query."""
     memories = load_memories()

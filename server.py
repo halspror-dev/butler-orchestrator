@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from orchestrator import orchestrate
 
-from memory import save_memory
+from memory import save_memory, load_memories, delete_memory
 
 BASE_DIR = os.path.dirname(__file__)
 
@@ -38,6 +38,29 @@ async def chat(req: ChatRequest):
 
 class MemoryRequest(BaseModel):
     fact: str
+
+@app.post("/save_memory")
+async def save_memory_endpoint(req: MemoryRequest):
+    try:
+        save_memory(req.fact)
+        return {"status": "saved", "fact": req.fact}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/memories")
+async def get_memories():
+    return {"memories": load_memories()}
+
+class DeleteRequest(BaseModel):
+    index: int
+
+@app.post("/delete_memory")
+async def delete_memory_endpoint(req: DeleteRequest):
+    try:
+        removed, remaining = delete_memory(req.index)
+        return {"removed": removed, "memories": remaining}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.post("/save_memory")
 async def save_memory_endpoint(req: MemoryRequest):
