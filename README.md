@@ -1,14 +1,14 @@
 # Butler
 
-A fully-local, multi-agent AI assistant — built from scratch, runs entirely on your own hardware, and never sends your data anywhere.
+A fully-local, multi-agent AI assistant built from scratch, runs entirely on your own hardware, and never sends your data anywhere.
 
 Butler routes each request to a specialist worker (code execution, reasoning, or web search), runs untrusted code in a hardened Docker sandbox, remembers what you tell it to (with your approval), and delivers everything in a consistent persona — all powered by a local LLM via Ollama, with no cloud calls and no agent frameworks.
 
----
+
 
 ## Why I built it
 
-I wanted an AI assistant that was genuinely *mine* — one where no prompt, file, or piece of personal context ever leaves my machine. Cloud assistants are powerful, but they are a black box you rent and feed your data to. Butler is the opposite: every component runs locally, the orchestration logic is hand-written (no LangChain, CrewAI, or similar), and I can see and control exactly what happens to every request.
+I wanted an AI assistant that was genuinely *mine* one where no prompt, file, or piece of personal context ever leaves my machine. Cloud assistants are powerful, but they are a black box you rent and feed your data to. Butler is the opposite: every component runs locally, the orchestration logic is hand-written (no LangChain, CrewAI, or similar), and I can see and control exactly what happens to every request.
 
 It started as a learning project and became a real daily tool. Along the way it turned into an exercise in the things I care about professionally: **privacy-first design, security-conscious engineering, and understanding a system all the way down instead of gluing frameworks together.**
 
