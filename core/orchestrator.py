@@ -80,13 +80,19 @@ def web_worker(request, history=None):
     search_query = request
     if history:
         reformulate_system = (
-            "You turn a user's message into a single, standalone web search query. "
-            "Use the conversation context to resolve pronouns and references (e.g. 'he', 'that') "
-            "into specific names/terms. Reply with ONLY the search query text — no quotes, no explanation."
+            "You convert a user's message into a SHORT web search query (3-8 words max). "
+            "Use conversation context to resolve pronouns (e.g. 'he', 'that') into specific names. "
+            "Output ONLY the short query — no explanation, no answer, no sentences, no year unless the user specified one. "
+            "If the user wants current info, the search system already knows today's date; do NOT add a year yourself. "
+            "Example: 'has he commented on it lately?' with context about LeBron/Kobe -> 'LeBron James comments on Kobe Bryant'"
         )
         reformulate_prompt = f"CONVERSATION:\n{history}\n\nUSER MESSAGE: {request}\n\nStandalone search query:"
         search_query = ask_ollama(reformulate_prompt, model="qwen3:8b", system=reformulate_system).strip()
         search_query = clean_leak(search_query)
+        # Safeguard: if the model rambled instead of giving a short query, fall back to the raw request.
+        if len(search_query.split()) > 15:
+            print("[Orchestrator] Reformulation too long — falling back to raw request.")
+            search_query = request
         print(f"[Orchestrator] Reformulated search query: {search_query}")
 
     results = web_search(search_query)
