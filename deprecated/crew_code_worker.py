@@ -8,7 +8,7 @@ from crewai_tools import CodeInterpreterTool
 # this is the line between "sandboxed" and "RCE on your host."
 code_tool = CodeInterpreterTool(unsafe_mode=False)
 
-worker_llm = LLM(model="ollama/qwen3:8b", base_url="http://localhost:11434")
+worker_llm = LLM(model="ollama/qwen3:14b", base_url="http://localhost:11434")
 
 # A worker that can actually RUN code, not just write it.
 coder = Agent(

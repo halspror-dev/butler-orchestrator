@@ -1,6 +1,6 @@
 import requests
 
-def ask_ollama(prompt, model="qwen3:8b", system=None, timeout=70):
+def ask_ollama(prompt, model="qwen3:14b", system=None, timeout=70):
     """Send a prompt to local Ollama and return the text response. No framework."""
     messages = []
     if system:

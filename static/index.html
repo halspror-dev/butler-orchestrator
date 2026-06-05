@@ -36,8 +36,8 @@
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .thinking .butler-msg { color: #484f58; font-style: italic; animation: pulse 1.4s ease-in-out infinite; }
     #input-bar { flex-shrink: 0; background: #161b22; border-top: 1px solid #21262d; padding: 12px 20px; }
-    #input-inner { max-width: 800px; margin: 0 auto; display: flex; gap: 8px; }
-    #input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; padding: 10px 14px; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.15s; }
+    #input-inner { max-width: 800px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
+    #input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; padding: 10px 14px; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.15s; resize: none; max-height: 150px; overflow-y: auto; line-height: 1.4; }
     #input::placeholder { color: #484f58; }
     #input:focus { border-color: #2dd4bf; }
     #send { background: #2dd4bf; color: #0d1117; border: none; border-radius: 8px; padding: 10px 22px; font-size: 0.88rem; font-weight: 700; font-family: inherit; letter-spacing: 0.5px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
@@ -63,7 +63,7 @@
 
   <div id="input-bar">
     <div id="input-inner">
-      <input id="input" type="text" placeholder="Speak to Butler..." autocomplete="off">
+      <textarea id="input" rows="1" placeholder="Speak to Butler..." autocomplete="off"></textarea>
       <button id="send">Send</button>
     </div>
   </div>
@@ -141,6 +141,7 @@
       if (!message || btn.disabled) return;
       const history = buildHistory();
       input.value = '';
+      input.style.height = 'auto';
       btn.disabled = true;
 
       const userEl = document.createElement('div');
@@ -241,7 +242,16 @@
     }
 
     btn.addEventListener('click', send);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+    });
     input.focus();
   </script>
 </body>

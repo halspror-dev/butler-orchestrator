@@ -4,7 +4,7 @@ from memory import save_memory, search_memories, load_memories
 from web import web_search
 import time
 
-BUTLER_MODEL = "qwen3:8b"
+BUTLER_MODEL = "qwen3:14b "
 BUTLER_SYSTEM = """You are Butler, Carlie's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
 
 ABSOLUTE LANGUAGE RULE: You ALWAYS respond in ENGLISH ONLY.
@@ -58,7 +58,7 @@ Output ONLY the single fact line, or NONE. Nothing else."""
 def propose_memory(user_message):
     if not looks_personal(user_message):
         return None
-    result = ask_ollama(user_message, model="qwen3:8b", system=MEMORY_PROPOSER_SYSTEM).strip()
+    result = ask_ollama(user_message, model="qwen3:14b", system=MEMORY_PROPOSER_SYSTEM).strip()
     result = clean_leak(result)
     # Take only the first line in case the model rambles.
     result = result.split("\n")[0].strip()
@@ -72,7 +72,7 @@ def propose_memory(user_message):
 
 def code_worker(request):
     print("\n[Orchestrator] Routing to: CODE WORKER")
-    return run_agent(request, model="qwen3:8b")
+    return run_agent(request, model="qwen3:14b")
 
 REASONING_SYSTEM = """You are Butler, Carlie's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
 
@@ -96,7 +96,7 @@ def reasoning_worker(request, history=None):
         print("[Orchestrator] Using conversation context.")
     parts.append(f"Current message from the user: {request}")
     full_prompt = "\n\n".join(parts)
-    return ask_ollama(full_prompt, model="qwen3:8b", system=REASONING_SYSTEM)
+    return ask_ollama(full_prompt, model="qwen3:14b", system=REASONING_SYSTEM)
 
 WEB_SYSTEM = """You are Butler, Carlie's personal AI assistant. You are calm, dry-witted, and concise, with subtle humor and a touch of class. You address him as "sir."
 
@@ -116,14 +116,14 @@ def web_worker(request, history=None):
             "Output ONLY the short query — no explanation, no answer, no sentences, no year unless the user specified one."
         )
         reformulate_prompt = f"CONVERSATION:\n{history}\n\nUSER MESSAGE: {request}\n\nStandalone search query:"
-        search_query = clean_leak(ask_ollama(reformulate_prompt, model="qwen3:8b", system=reformulate_system).strip())
+        search_query = clean_leak(ask_ollama(reformulate_prompt, model="qwen3:14b", system=reformulate_system).strip())
         if len(search_query.split()) > 15:
             print("[Orchestrator] Reformulation too long — falling back to raw request.")
             search_query = request
         print(f"[Orchestrator] Reformulated search query: {search_query}")
     results = web_search(search_query)
     prompt = f"USER QUESTION: {request}\n\nSEARCH RESULTS:\n{results}"
-    return ask_ollama(prompt, model="qwen3:8b", system=WEB_SYSTEM)
+    return ask_ollama(prompt, model="qwen3:14b", system=WEB_SYSTEM)
 
 WORKERS = {"code": code_worker, "reasoning": reasoning_worker, "web": web_worker}
 
@@ -156,7 +156,7 @@ def model_based_route(request):
         "'web' if it needs current/live information from the internet, or "
         "'reasoning' if it just needs explanation or analysis. Reply with only that one word."
     )
-    choice = ask_ollama(request, model="qwen3:8b", system=system).strip().lower()
+    choice = ask_ollama(request, model="qwen3:14b", system=system).strip().lower()
     if "code" in choice:
         return "code"
     if "web" in choice:

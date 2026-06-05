@@ -14,7 +14,7 @@ os.environ["OPENAI_API_KEY"] = "NA"
 
 # Two workers, both on a clean tool-capable model for now.
 llm = LLM(
-    model="ollama/qwen3:8b",
+    model="ollama/qwen3:14b",
     base_url="http://localhost:11434"
 )
 

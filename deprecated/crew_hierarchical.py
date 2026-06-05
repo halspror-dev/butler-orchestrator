@@ -4,7 +4,7 @@ os.environ["OPENAI_API_KEY"] = "NA"
 from crewai import Agent, Task, Crew, LLM, Process
 
 # Worker models (fast, reliable) + a stronger manager model.
-worker_llm = LLM(model="ollama/qwen3:8b", base_url="http://localhost:11434")
+worker_llm = LLM(model="ollama/qwen3:14b", base_url="http://localhost:11434")
 manager_llm = LLM(model="ollama/qwen3:14b", base_url="http://localhost:11434")
 
 # Two specialist workers — note: NO fixed task order this time.
