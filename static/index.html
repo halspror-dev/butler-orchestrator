@@ -127,10 +127,53 @@
       butlerWrapper.append(tag, butlerMsg);
       conv.appendChild(butlerWrapper);
 
-      if (proposal) {
+     if (proposal) {
         const memEl = document.createElement('div');
-        memEl.style.cssText = 'align-self:flex-start;color:#2dd4bf;font-size:0.8rem;font-style:italic;padding-left:14px;margin-top:2px;opacity:0.9;';
-        memEl.textContent = '\u{1F4BE} I could remember: ' + proposal;
+        memEl.style.cssText = 'align-self:flex-start;max-width:78%;background:#161b22;border:1px solid rgba(45,212,191,0.3);border-radius:8px;padding:10px 14px;margin-top:2px;display:flex;flex-direction:column;gap:8px;';
+
+        const memText = document.createElement('div');
+        memText.style.cssText = 'color:#2dd4bf;font-size:0.82rem;font-style:italic;';
+        memText.textContent = '💾 Remember this? — ' + proposal;
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:8px;';
+
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'Yes';
+        yesBtn.style.cssText = 'background:#2dd4bf;color:#0d1117;border:none;border-radius:6px;padding:4px 16px;font-size:0.78rem;font-weight:700;cursor:pointer;';
+
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'No';
+        noBtn.style.cssText = 'background:#21262d;color:#8b949e;border:none;border-radius:6px;padding:4px 16px;font-size:0.78rem;font-weight:700;cursor:pointer;';
+
+        yesBtn.addEventListener('click', async () => {
+          yesBtn.disabled = true;
+          noBtn.disabled = true;
+          try {
+            const r = await fetch('/save_memory', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fact: proposal })
+            });
+            const d = await r.json();
+            if (d.status === 'saved') {
+              memEl.innerHTML = '';
+              const saved = document.createElement('div');
+              saved.style.cssText = 'color:#2dd4bf;font-size:0.82rem;';
+              saved.textContent = '✓ Saved to memory: ' + proposal;
+              memEl.appendChild(saved);
+            } else {
+              memText.textContent = '⚠ Could not save.';
+            }
+          } catch (e) {
+            memText.textContent = '⚠ Error saving: ' + e.message;
+          }
+        });
+
+        noBtn.addEventListener('click', () => { conv.removeChild(memEl); });
+
+        btnRow.append(yesBtn, noBtn);
+        memEl.append(memText, btnRow);
         conv.appendChild(memEl);
       }
 

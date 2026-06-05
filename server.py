@@ -10,6 +10,8 @@ from pydantic import BaseModel
 
 from orchestrator import orchestrate
 
+from memory import save_memory
+
 BASE_DIR = os.path.dirname(__file__)
 
 app = FastAPI(title="Butler API")
@@ -31,6 +33,17 @@ async def chat(req: ChatRequest):
     try:
         worker, reply, proposal = orchestrate(req.message, history=req.history or None)
         return {"worker": worker, "reply": reply, "proposed_memory": proposal}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+class MemoryRequest(BaseModel):
+    fact: str
+
+@app.post("/save_memory")
+async def save_memory_endpoint(req: MemoryRequest):
+    try:
+        save_memory(req.fact)
+        return {"status": "saved", "fact": req.fact}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
