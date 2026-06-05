@@ -53,7 +53,7 @@
   </header>
 
   <div id="mem-drawer">
-    <h2>Saved Memories</h2>
+    <h2>Saved Memories <span id="mem-close" style="float:right;cursor:pointer;color:#6e7681;">&#10005;</span></h2>
     <div id="mem-list"></div>
   </div>
 
@@ -131,6 +131,9 @@
     memToggle.addEventListener('click', () => {
       memDrawer.classList.toggle('open');
       if (memDrawer.classList.contains('open')) loadMemories();
+    });
+    document.getElementById('mem-close').addEventListener('click', () => {
+      memDrawer.classList.remove('open');
     });
 
     async function send() {
