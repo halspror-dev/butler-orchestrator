@@ -1,14 +1,14 @@
 # Butler
 
-A fully-local, multi-agent AI assistant — built from scratch, runs entirely on your own hardware, and never sends your data anywhere.
+A fully-local, multi-agent AI assistant built from scratch, runs entirely on your own hardware, and never sends your data anywhere.
 
 Butler routes each request to a specialist worker (code execution, reasoning, or web search), runs untrusted code in a hardened Docker sandbox, remembers what you tell it to (with your approval), and delivers everything in a consistent persona — all powered by a local LLM via Ollama, with no cloud calls and no agent frameworks.
 
----
+
 
 ## Why I built it
 
-I wanted an AI assistant that was genuinely *mine* — one where no prompt, file, or piece of personal context ever leaves my machine. Cloud assistants are powerful, but they are a black box you rent and feed your data to. Butler is the opposite: every component runs locally, the orchestration logic is hand-written (no LangChain, CrewAI, or similar), and I can see and control exactly what happens to every request.
+I wanted an AI assistant that was genuinely *mine* one where no prompt, file, or piece of personal context ever leaves my machine. Cloud assistants are powerful, but they are a black box you rent and feed your data to. Butler is the opposite: every component runs locally, the orchestration logic is hand-written (no LangChain, CrewAI, or similar), and I can see and control exactly what happens to every request.
 
 It started as a learning project and became a real daily tool. Along the way it turned into an exercise in the things I care about professionally: **privacy-first design, security-conscious engineering, and understanding a system all the way down instead of gluing frameworks together.**
 
@@ -22,6 +22,7 @@ It started as a learning project and became a real daily tool. Along the way it 
   - **Reasoning worker** — explanation and analysis, with hardened *independent reasoning* (see below).
   - **Web worker** — live internet search (DuckDuckGo), treating fetched content as untrusted data, not instructions.
 - **Butler persona** — every worker answers in a consistent voice (dry, concise, English-only), with a strict faithfulness rule: computed values like hashes pass through *exactly*, never altered.
+- **Resource lifecycle control.** Butler runs on the same machine I game on, where GPU VRAM and RAM are finite and contested. Rather than leave the stack running and competing for resources, the entire system is controlled by two one-click desktop scripts: one brings the full stack up (Docker, Ollama, the server, and the browser), and one tears it completely down — killing the server, unloading the model from VRAM, stopping Ollama, and shutting down Docker's WSL backend to reclaim the RAM it held. This makes a heavyweight local AI a deliberate, on-demand tool rather than a permanent resource drain: ~9GB of VRAM and several GB of RAM are freed the moment it's switched off.
 - **Review-gated memory** — Butler proposes durable personal facts worth remembering and asks for approval (Yes/No buttons). Nothing is stored without an explicit click. Memories are viewable and deletable in a UI drawer, stored in a local, human-readable JSON file.
 - **Resource control** — one-click desktop toggles to spin the entire stack up or tear it fully down (server + Ollama + Docker), freeing VRAM and RAM for other work like gaming.
 
@@ -75,7 +76,7 @@ The threat model: the LLM is treated as an **untrusted code generator**. Even if
 
 **Privacy by design.** No request, file, or memory ever leaves the machine. The only optional outbound traffic is explicit web searches the user requests.
 
-**Faithfulness.** When Butler delivers a computed value (a hash, a number), it reproduces it exactly. The persona adds personality to the framing only — the facts pass through unchanged.
+**.** When Butler delivers a computed value (a hash, a number), it reproduces it exactly. The persona adds personality to the framing only — the facts pass through unchanged.
 
 ---
 
