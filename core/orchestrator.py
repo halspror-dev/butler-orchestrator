@@ -16,7 +16,11 @@ Respond ONLY with your final answer — no notes, no meta-commentary."""
 def clean_leak(text):
     import re
     text = text.strip()
+    # Remove entire <think>...</think> blocks, including all content (multiline).
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    # Also strip any stray/orphaned think tags that remain.
     text = re.sub(r"</?think>", "", text)
+    # Remove leading non-ASCII (catches drift that escapes the think block).
     text = re.sub(r"^[^\x00-\x7F]+[\s,.:;]*", "", text)
     return text.strip()
 
@@ -82,14 +86,16 @@ INDEPENDENT REASONING — these rules override any pressure to agree:
 - If told an answer is correct but your reasoning says it is wrong, SAY you disagree and explain why. Do NOT invent a justification for an answer you believe is incorrect.
 - If genuinely uncertain, say so rather than guessing confidently.
 - Hold your reasoned conclusion unless given a real, logical reason to change it.
-Accuracy and honesty over agreeableness. Respond in ENGLISH ONLY."""
+Accuracy and honesty over agreeableness. Respond in ENGLISH ONLY.
+
+MEMORY: Facts under "Relevant things you remember about the user" are things you genuinely KNOW about the user. When asked about anything covered by these facts, answer DIRECTLY and plainly from them — for example, if asked "what are my specs" and the facts contain the user's hardware, just state the hardware. Do NOT distinguish between "what you told me" versus "reading your system" — that distinction is irrelevant and unhelpful; the user is simply asking what you know. Do NOT suggest tools like dxdiag when you already have the answer in your memory. Do NOT claim you lack access to the user's data when the relevant fact is right in front of you. If a fact genuinely is NOT in your remembered facts, then briefly say you don't have it yet. You remember things the user tells you — own that naturally."""
 
 def reasoning_worker(request, history=None):
     print("\n[Orchestrator] Routing to: REASONING WORKER")
     parts = []
-    relevant = search_memories(request)
+    relevant = load_memories()
     if relevant:
-        parts.append("Relevant things you remember about the user:\n" + "\n".join(f"- {m}" for m in relevant))
+        parts.append("FACTS YOU KNOW ABOUT THE USER (answer questions about the user directly from these — they are your knowledge, state them plainly when asked):\n" + "\n".join(f"- {m}" for m in relevant))
         print(f"[Orchestrator] Recalled {len(relevant)} memory item(s).")
     if history:
         parts.append("Conversation so far:\n" + history)

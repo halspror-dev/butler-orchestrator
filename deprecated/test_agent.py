@@ -6,7 +6,7 @@ os.environ["OPENAI_API_KEY"] = "NA"
 
 # Point CrewAI at your local Ollama. The "ollama/" prefix is REQUIRED.
 llm = LLM(
-    model="ollama/huihui_ai/qwen3-abliterated:14b",
+    model="ollama/qwen3:14b",
     base_url="http://localhost:11434"
 )
 
