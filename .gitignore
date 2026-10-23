@@ -17,3 +17,6 @@ env/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Web research evidence (research skill)
+.research/
