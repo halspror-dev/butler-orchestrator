@@ -32,7 +32,8 @@ Link files by repo path, don't paste large content.
 
 ## Before a thread finishes
 Update `status/<this-project>.md`. Move inbox notes you handled to `archive/`. Commit with a short message
-naming the project, and push to main.
+naming the project, push your branch and open a PR to `main`. A PR that only touches `status/`, `inbox/`
+or `archive/` merges itself within a minute, so carlie doesn't have to do anything.
 
 ## Rules
 - No secrets, passwords, keys, tokens, ntfy topics or personal data.
