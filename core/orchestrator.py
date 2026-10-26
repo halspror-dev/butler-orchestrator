@@ -2,6 +2,7 @@ from ollama_client import ask_ollama
 from agent import run_agent
 from memory import save_memory, search_memories, load_memories
 from web import web_search
+import re
 import time
 
 BUTLER_MODEL = "qwen3:14b "
@@ -175,7 +176,7 @@ def orchestrate(request, history=None):
     stripped = request.strip()
 
     if stripped.lower().startswith("remember"):
-        fact = stripped[len("remember"):].lstrip(" :,that").strip()
+        fact = re.sub(r"^[\s:,]*(that\b)?", "", stripped[len("remember"):]).strip()
         if fact:
             save_memory(fact)
             print("[Orchestrator] Saved to memory.")
