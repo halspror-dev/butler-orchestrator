@@ -5,7 +5,7 @@
   python research.py log                     one line per fetch, FAILED ones included
 
 Evidence lives in $RESEARCH_DIR, else /mnt/project-files/research if it exists, else ./.research.
-A non-200, a tiny body or a block page is logged FAILED and never searched. A 429 is retried once after 60s.
+A non-200, a tiny body or a block page is logged FAILED and never searched. A 429 is retried twice (after 60s, then 120s).
 """
 import hashlib, html, json, os, re, sys, time, urllib.error, urllib.request
 from pathlib import Path
@@ -28,7 +28,7 @@ def to_text(body):
     return re.sub(r"\n\s*\n+", "\n\n", t)
 
 
-def fetch(url, retry=True):
+def fetch(url, retry=2):
     rec = {"url": url, "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=30) as r:
@@ -38,9 +38,10 @@ def fetch(url, retry=True):
     except Exception as e:
         body, rec["status"], rec["error"] = b"", None, repr(e)
     if rec["status"] == 429 and retry:
-        print("429, retrying once in 60s", url)
-        time.sleep(60)
-        return fetch(url, retry=False)
+        wait = 60 * (3 - retry)
+        print(f"429, retrying in {wait}s", url)
+        time.sleep(wait)
+        return fetch(url, retry - 1)
     key = hashlib.sha1(url.encode()).hexdigest()
     rec["bytes"], rec["sha1"] = len(body), key
     (ROOT / "raw" / f"{key}.body").write_bytes(body)
@@ -62,6 +63,10 @@ def grep(pattern, context=0):
         lines = f.read_text().splitlines()
         hits = [i for i, l in enumerate(lines) if i > 1 and rx.search(l)]
         for i in hits:
+            if len(lines[i]) > 600:  # one-line JSON/XML (HN, arXiv): show each match, not the line start
+                for m in list(rx.finditer(lines[i]))[:5]:
+                    print(f"{lines[0]} | {lines[i][max(0, m.start() - 250): m.end() + 250]}")
+                continue
             snippet = " ".join(l.strip() for l in lines[max(2, i - context): i + context + 1])
             print(f"{lines[0]} | {snippet[:600]}")
 

@@ -14,7 +14,7 @@ response backs it. Research is also what fills context, so pages go to disk and 
 2. Reddit: `.json` endpoints are blocked (403). RSS works with `research.py`'s descriptive User-Agent
    (plain curl gets 403): `https://www.reddit.com/r/<sub>/search.rss?q=...&restrict_sr=1&sort=top&t=year`,
    comments at `<post link>.rss`. Reddit rate-limits hard, so the tool waits 10s between Reddit calls and
-   retries a 429 once after 60s.
+   retries a 429 twice (after 60s, then 120s).
 
 ## Doing it
 - `python .claude/skills/research/research.py fetch URL ...` saves every response (raw and text) and
